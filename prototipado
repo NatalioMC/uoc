@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototipo de Cursos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-container input, .search-container select {
+            padding: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            flex: 1;
+            min-width: 200px;
+        }
+        .search-container button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .search-container button:hover {
+            background-color: #0056b3;
+        }
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter {
+            background-color: #e0e0e0;
+            padding: 8px;
+            border-radius: 4px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .filter span {
+            margin-right: 5px;
+        }
+        .filter button {
+            border: none;
+            background-color: #ccc;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .course {
+            padding: 20px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .course button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .course button:hover {
+            background-color: #218838;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .suggestions {
+            position: relative;
+            display: inline-block;
+        }
+        .suggestions-list {
+            position: absolute;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 1;
+        }
+        .suggestions-list div {
+            padding: 10px;
+            cursor: pointer;
+        }
+        .suggestions-list div:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <div class="suggestions">
+                <input type="text" id="searchInput" placeholder="Buscar cursos..." oninput="showSuggestions(this.value)">
+                <div id="suggestions" class="suggestions-list"></div>
+            </div>
+            <button onclick="searchCourses()">Buscar</button>
+            <button onclick="showAllCourses()">Mostrar Todos</button>
+            <select id="durationFilter" onchange="filterCourses()">
+                <option value="">Filtrar por duración</option>
+                <option value="5">5 horas</option>
+                <option value="10">10 horas</option>
+                <option value="15">15 horas</option>
+                <option value="20">20 horas</option>
+            </select>
+            <select id="areaFilter" onchange="filterCourses()">
+                <option value="">Filtrar por área</option>
+                <option value="Ciencia de Datos">Ciencia de Datos</option>
+                <option value="Programación">Programación</option>
+                <option value="Análisis de Datos">Análisis de Datos</option>
+            </select>
+            <select id="typeFilter" onchange="filterCourses()">
+                <option value="">Filtrar por tipo</option>
+                <option value="Gratis">Gratis</option>
+                <option value="Pago">Pago</option>
+            </select>
+        </div>
+        <div class="filter-container" id="appliedFilters"></div>
+        <div id="courseList"></div>
+    </div>
+
+    <div id="courseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <p id="modalDescription"></p>
+            <ul>
+                <li><strong>Duración:</strong> <span id="modalDuration"></span></li>
+                <li><strong>Precio:</strong> <span id="modalPrice"></span></li>
+                <li><strong>Fecha de comienzo:</strong> <span id="modalStartDate"></span></li>
+                <li><strong>Área:</strong> <span id="modalArea"></span></li>
+                <li><strong>Tipo:</strong> <span id="modalType"></span></li>
+            </ul>
+            <button onclick="goToCourse()">Ir al curso</button>
+        </div>
+    </div>
+
+    <div id="enrollModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Inscripción confirmada</h2>
+            <p>Te has inscrito en el curso. ¡Buena suerte!</p>
+            <button onclick="startCourse()">Comenzar curso</button>
+        </div>
+    </div>
+
+    <script>
+        const courses = [
+            { title: 'Introducción a la Ciencia de Datos', duration: 10, price: 20, startDate: '2024-06-01', area: 'Ciencia de Datos', type: 'Pago', url: 'https://coursera.org/intro-ciencia-datos' },
+            { title: 'Fundamentos de Programación', duration: 20, price: 25, startDate: '2024-06-15', area: 'Programación', type: 'Pago', url: 'https://coursera.org/fundamentos-programacion' },
+            { title: 'Python Básico Gratis', duration: 5, price: 0, startDate: '2024-07-01', area: 'Programación', type: 'Gratis', url: 'https://coursera.org/python-basico' },
+            { title: 'Análisis de Datos con Python', duration: 15, price: 30, startDate: '2024-06-20', area: 'Análisis de Datos', type: 'Pago', url: 'https://coursera.org/analisis-datos-python' }
+        ];
+
+        let currentCourses = [];
+        let appliedFilters = { duration: "", area: "", type: "" };
+
+        function showSuggestions(value) {
+            const suggestions = courses.filter(course => course.title.toLowerCase().includes(value.toLowerCase()));
+            const suggestionBox = document.getElementById('suggestions');
+            if (value === "") {
+                suggestionBox.innerHTML = '';
+                return;
+            }
+            suggestionBox.innerHTML = suggestions.map(course => `<div onclick="selectSuggestion('${course.title}')">${course.title}</div>`).join('');
+        }
+
+        function selectSuggestion(title) {
+            document.getElementById('searchInput').value = title;
+            document.getElementById('suggestions').innerHTML = '';
+        }
+
+        function searchCourses() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            currentCourses = courses.filter(course => course.title.toLowerCase().includes(searchInput));
+            displayCourses(currentCourses);
+            document.getElementById('searchInput').value = '';
+            document.getElementById('suggestions').innerHTML = '';
+        }
+
+        function showAllCourses() {
+            currentCourses = courses;
+            displayCourses(currentCourses);
+        }
+
+        function filterCourses() {
+            const durationFilter = document.getElementById('durationFilter').value;
+            const areaFilter = document.getElementById('areaFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            appliedFilters = { duration: durationFilter, area: areaFilter, type: typeFilter };
+            updateAppliedFilters();
+
+            const filteredCourses = currentCourses.filter(course => {
+                return (!durationFilter || course.duration == durationFilter) &&
+                       (!areaFilter || course.area == areaFilter) &&
+                       (!typeFilter || (typeFilter == 'Gratis' ? course.price == 0 : course.price > 0));
+            });
+
+            displayCourses(filteredCourses);
+        }
+
+        function updateAppliedFilters() {
+            const filterContainer = document.getElementById('appliedFilters');
+            filterContainer.innerHTML = '';
+            for (const key in appliedFilters) {
+                if (appliedFilters[key]) {
+                    const filterDiv = document.createElement('div');
+                    filterDiv.className = 'filter';
+                    filterDiv.innerHTML = `<span>${key}: ${appliedFilters[key]}</span><button onclick="removeFilter('${key}')">x</button>`;
+                    filterContainer.appendChild(filterDiv);
+                }
+            }
+        }
+
+        function removeFilter(filterKey) {
+            appliedFilters[filterKey] = '';
+            document.getElementById(`${filterKey}Filter`).value = '';
+            filterCourses();
+        }
+
+        function displayCourses(courseList) {
+            const courseListContainer = document.getElementById('courseList');
+            courseListContainer.innerHTML = courseList.map(course => `
+                <div class="course">
+                    <div>
+                        <h3>${course.title}</h3>
+                        <p>${course.duration} horas - $${course.price}</p>
+                    </div>
+                    <div>
+                        <button onclick="viewCourse('${course.title}')">Ver Curso</button>
+                        <button onclick="enrollCourse()">Inscribirse</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewCourse(title) {
+            const course = courses.find(course => course.title === title);
+            document.getElementById('modalTitle').innerText = course.title;
+            document.getElementById('modalDescription').innerText = course.description || 'Descripción no disponible.';
+            document.getElementById('modalDuration').innerText = course.duration + ' horas';
+            document.getElementById('modalPrice').innerText = '$' + course.price;
+            document.getElementById('modalStartDate').innerText = course.startDate;
+            document.getElementById('modalArea').innerText = course.area;
+            document.getElementById('modalType').innerText = course.type;
+            document.getElementById('courseModal').style.display = 'block';
+        }
+
+        function enrollCourse() {
+            document.getElementById('enrollModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('courseModal').style.display = 'none';
+            document.getElementById('enrollModal').style.display = 'none';
+        }
+
+        function startCourse() {
+            closeModal();
+            alert('¡Comenzando el curso!');
+        }
+
+        function goToCourse() {
+            const courseTitle = document.getElementById('modalTitle').innerText;
+            const course = courses.find(course => course.title === courseTitle);
+            window.open(course.url, '_blank');
+        }
+
+        document.getElementById('searchInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                searchCourses();
+            }
+        });
+    </script>
+</body>
+</html>
+
